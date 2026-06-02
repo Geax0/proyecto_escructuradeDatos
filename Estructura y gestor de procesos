@@ -1,0 +1,230 @@
+/*
+ * ============================================================
+ *  SISTEMA DE GESTION DE PROCESOS
+ *  Simulador de administracion de recursos en un Sistema Operativo
+ *
+ *  Universidad Continental | Estructura de Datos | 2026
+ *  Integrantes:
+ *    - Cunyas Lanasca, Geanpiero Andre
+ *    - Vilchez Aquino, Andy Jeison
+ *    - Torres Patilla, Xiomara Yamile
+ *    - Aguado Garay, Frank Joseph
+ *
+ *  Restricciones:
+ *    - Lenguaje: C++ (DEV C++)
+ *    - Prohibido usar STL
+ *    - Toda gestion de datos: nodos y punteros nativos
+ *    - Uso obligatorio de delete para liberar memoria
+ * ============================================================
+ */
+
+#include <iostream>
+#include <cstring>
+using namespace std;
+
+const int TAM_STR = 50;
+
+// ============================================================
+//  FUNCIONES DE LECTURA SEGURA
+//  Evitan que el programa se rompa con entradas invalidas
+// ============================================================
+
+// Leer un entero positivo. Si el usuario mete letras o negativo
+// lo rechaza y vuelve a pedir hasta recibir un numero valido.
+int leerEnteroPositivo(const char* mensaje) {
+    int valor;
+    while (true) {
+        cout << mensaje;
+        cin >> valor;
+        if (cin.fail() || valor <= 0) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Entrada invalida. Ingrese un numero entero positivo." << endl;
+        } else {
+            cin.ignore(1000, '\n');
+            return valor;
+        }
+    }
+}
+
+// Leer un entero >= 0 (acepta cero, util para IDs o menus)
+int leerEntero(const char* mensaje) {
+    int valor;
+    while (true) {
+        cout << mensaje;
+        cin >> valor;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Entrada invalida. Ingrese un numero entero." << endl;
+        } else {
+            cin.ignore(1000, '\n');
+            return valor;
+        }
+    }
+}
+
+// Leer una cadena de texto sin espacios (una palabra)
+// Rechaza entrada vacia o demasiado larga
+void leerCadena(const char* mensaje, char* destino, int maxLen) {
+    while (true) {
+        cout << mensaje;
+        cin >> destino;
+        if (cin.fail() || strlen(destino) == 0) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Entrada invalida. Intente de nuevo." << endl;
+        } else {
+            // Truncar si por alguna razon supera el limite
+            destino[maxLen - 1] = '\0';
+            cin.ignore(1000, '\n');
+            return;
+        }
+    }
+}
+
+// ============================================================
+//  ESTRUCTURA COMPARTIDA: Proceso
+// ============================================================
+struct Proceso {
+    int  id;
+    char nombre[TAM_STR];
+    int  prioridad;
+    char estado[TAM_STR];
+};
+
+// ============================================================
+//  MODULO 1: GESTOR DE PROCESOS - Lista Enlazada Simple
+//  REQ-F01, REQ-F02, REQ-F03, REQ-F08
+// ============================================================
+
+struct NodoProceso {
+    Proceso      dato;
+    NodoProceso* siguiente;
+};
+
+struct ListaProcesos {
+    NodoProceso* inicio;
+    int          total;
+
+    ListaProcesos() : inicio(NULL), total(0) {}
+};
+
+// REQ-F01: Agregar proceso al final de la lista
+void agregarProceso(ListaProcesos& lista, int id, const char* nombre, int prioridad) {
+    // Verificar que el ID no exista
+    NodoProceso* aux = lista.inicio;
+    while (aux != NULL) {
+        if (aux->dato.id == id) {
+            cout << "ERROR: Ya existe un proceso con ID " << id << endl;
+            return;
+        }
+        aux = aux->siguiente;
+    }
+
+    // Crear nuevo nodo
+    NodoProceso* nuevo = new NodoProceso();
+    nuevo->dato.id = id;
+    strncpy(nuevo->dato.nombre, nombre, TAM_STR - 1);
+    strncpy(nuevo->dato.estado, "Listo", TAM_STR - 1);
+    nuevo->dato.prioridad = prioridad;
+    nuevo->siguiente = NULL;
+
+    // Insertar al final
+    if (lista.inicio == NULL) {
+        lista.inicio = nuevo;
+    } else {
+        NodoProceso* temp = lista.inicio;
+        while (temp->siguiente != NULL) {
+            temp = temp->siguiente;
+        }
+        temp->siguiente = nuevo;
+    }
+
+    lista.total++;
+    cout << "Proceso '" << nombre << "' (ID=" << id << ") registrado correctamente." << endl;
+}
+
+// REQ-F02: Buscar proceso por ID
+NodoProceso* buscarProceso(ListaProcesos& lista, int idBuscado) {
+    NodoProceso* aux = lista.inicio;
+    while (aux != NULL) {
+        if (aux->dato.id == idBuscado) {
+            return aux;
+        }
+        aux = aux->siguiente;
+    }
+    return NULL;
+}
+
+// REQ-F03: Modificar prioridad y estado
+void modificarProceso(ListaProcesos& lista, int id, int nuevaPrioridad, const char* nuevoEstado) {
+    NodoProceso* encontrado = buscarProceso(lista, id);
+    if (encontrado == NULL) {
+        cout << "ERROR: No existe un proceso con ID " << id << endl;
+        return;
+    }
+    encontrado->dato.prioridad = nuevaPrioridad;
+    strncpy(encontrado->dato.estado, nuevoEstado, TAM_STR - 1);
+    cout << "Proceso ID=" << id << " actualizado. Prioridad=" << nuevaPrioridad
+         << " | Estado=" << nuevoEstado << endl;
+}
+
+// REQ-F03: Eliminar proceso
+void eliminarProceso(ListaProcesos& lista, int id) {
+    if (lista.inicio == NULL) {
+        cout << "ERROR: La lista de procesos esta vacia." << endl;
+        return;
+    }
+
+    NodoProceso* actual   = lista.inicio;
+    NodoProceso* anterior = NULL;
+
+    while (actual != NULL && actual->dato.id != id) {
+        anterior = actual;
+        actual   = actual->siguiente;
+    }
+
+    if (actual == NULL) {
+        cout << "ERROR: No existe un proceso con ID " << id << endl;
+        return;
+    }
+
+    // Reasignar punteros para desconectar el nodo
+    if (anterior == NULL) {
+        lista.inicio = actual->siguiente;
+    } else {
+        anterior->siguiente = actual->siguiente;
+    }
+
+    cout << "Proceso '" << actual->dato.nombre << "' (ID=" << id << ") eliminado." << endl;
+
+    delete actual;
+    actual = NULL;
+    lista.total--;
+}
+
+// REQ-F08: Mostrar todos los procesos
+void mostrarProcesos(const ListaProcesos& lista) {
+    if (lista.inicio == NULL) {
+        cout << "No hay procesos registrados." << endl;
+        return;
+    }
+
+    cout << "--------------------------------------------------" << endl;
+    cout << "ID    | Nombre             | Prioridad | Estado" << endl;
+    cout << "--------------------------------------------------" << endl;
+
+    NodoProceso* aux = lista.inicio;
+    while (aux != NULL) {
+        printf("%-5d | %-18s | %-9d | %s\n",
+               aux->dato.id,
+               aux->dato.nombre,
+               aux->dato.prioridad,
+               aux->dato.estado);
+        aux = aux->siguiente;
+    }
+
+    cout << "--------------------------------------------------" << endl;
+    cout << "Total de procesos: " << lista.total << endl;
+}
