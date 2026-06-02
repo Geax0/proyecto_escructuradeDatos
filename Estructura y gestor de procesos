@@ -228,3 +228,100 @@ void mostrarProcesos(const ListaProcesos& lista) {
     cout << "--------------------------------------------------" << endl;
     cout << "Total de procesos: " << lista.total << endl;
 }
+
+// ============================================================
+//  MODULO 2: PLANIFICADOR DE CPU - Cola de Prioridad
+//  REQ-F04, REQ-F05, REQ-F08
+// ============================================================
+
+struct NodoCola {
+    Proceso   dato;
+    NodoCola* siguiente;
+};
+
+struct ColaPrioridad {
+    NodoCola* frente;
+    NodoCola* final;
+    int       total;
+
+    ColaPrioridad() : frente(NULL), final(NULL), total(0) {}
+};
+
+// REQ-F04: Encolar proceso segun prioridad (menor numero = mayor prioridad)
+void encolarProceso(ColaPrioridad& cola, const Proceso& proc) {
+    NodoCola* nuevo = new NodoCola();
+    nuevo->dato      = proc;
+    nuevo->siguiente = NULL;
+
+    if (cola.frente == NULL) {
+        cola.frente = nuevo;
+        cola.final  = nuevo;
+    } else if (nuevo->dato.prioridad < cola.frente->dato.prioridad) {
+        // Es el mas urgente, va al frente
+        nuevo->siguiente = cola.frente;
+        cola.frente = nuevo;
+    } else {
+        // Buscar posicion correcta
+        NodoCola* aux = cola.frente;
+        while (aux->siguiente != NULL &&
+               aux->siguiente->dato.prioridad <= nuevo->dato.prioridad) {
+            aux = aux->siguiente;
+        }
+        nuevo->siguiente = aux->siguiente;
+        aux->siguiente   = nuevo;
+        if (nuevo->siguiente == NULL) {
+            cola.final = nuevo;
+        }
+    }
+
+    cola.total++;
+    cout << "Proceso '" << proc.nombre << "' encolado con prioridad " << proc.prioridad << endl;
+}
+
+// REQ-F05: Desencolar y simular ejecucion
+void desencolarProceso(ColaPrioridad& cola) {
+    if (cola.frente == NULL) {
+        cout << "La cola de ejecucion esta vacia." << endl;
+        return;
+    }
+
+    NodoCola* temp = cola.frente;
+    cout << "[CPU] Ejecutando: '" << temp->dato.nombre
+         << "' (ID=" << temp->dato.id << " | Prioridad=" << temp->dato.prioridad << ")" << endl;
+
+    cola.frente = cola.frente->siguiente;
+    if (cola.frente == NULL) {
+        cola.final = NULL;
+    }
+
+    delete temp;
+    temp = NULL;
+    cola.total--;
+    cout << "Proceso finalizado y removido de la cola." << endl;
+}
+
+// REQ-F08: Mostrar cola
+void mostrarCola(const ColaPrioridad& cola) {
+    if (cola.frente == NULL) {
+        cout << "La cola de ejecucion esta vacia." << endl;
+        return;
+    }
+
+    cout << "Orden de ejecucion (frente -> final):" << endl;
+    cout << "------------------------------------------" << endl;
+    cout << "ID    | Nombre             | Prioridad" << endl;
+    cout << "------------------------------------------" << endl;
+
+    NodoCola* aux = cola.frente;
+    while (aux != NULL) {
+        printf("%-5d | %-18s | %d\n",
+               aux->dato.id,
+               aux->dato.nombre,
+               aux->dato.prioridad);
+        aux = aux->siguiente;
+    }
+
+    cout << "------------------------------------------" << endl;
+    cout << "Procesos en cola: " << cola.total << endl;
+}
+
