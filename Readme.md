@@ -36,9 +36,7 @@ Asigna y libera bloques de memoria RAM simulada siguiendo el principio LIFO. Cad
    ``` 
 
 3. Compilar y ejecutar
-   ```
-   F11
-   ```
+
 
 ---
 
