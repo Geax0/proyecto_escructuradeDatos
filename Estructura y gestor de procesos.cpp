@@ -325,3 +325,78 @@ void mostrarCola(const ColaPrioridad& cola) {
     cout << "Procesos en cola: " << cola.total << endl;
 }
 
+//  MODULO 3: GESTOR DE MEMORIA - Pila Dinamica
+//  REQ-F06, REQ-F07, REQ-F08
+
+struct NodoPila {
+    int       idProceso;
+    int       tamBloque;
+    NodoPila* anterior;
+};
+
+struct PilaMemoria {
+    NodoPila* tope;
+    int       totalBloques;
+    int       memoriaUsada;
+
+    PilaMemoria() : tope(NULL), totalBloques(0), memoriaUsada(0) {}
+};
+
+// REQ-F06: Asignar bloque de memoria (push)
+void asignarMemoria(PilaMemoria& pila, int idProceso, int tamBloque) {
+    NodoPila* nuevo  = new NodoPila();
+    nuevo->idProceso = idProceso;
+    nuevo->tamBloque = tamBloque;
+    nuevo->anterior  = pila.tope;
+
+    pila.tope = nuevo;
+    pila.totalBloques++;
+    pila.memoriaUsada += tamBloque;
+
+    cout << "[PUSH] Bloque de " << tamBloque << " KB asignado al proceso ID=" << idProceso
+         << ". Memoria en uso: " << pila.memoriaUsada << " KB" << endl;
+}
+
+// REQ-F07: Liberar bloque de memoria (pop)
+void liberarMemoria(PilaMemoria& pila) {
+    if (pila.tope == NULL) {
+        cout << "La pila de memoria esta vacia." << endl;
+        return;
+    }
+
+    NodoPila* temp = pila.tope;
+    cout << "[POP] Liberando bloque de " << temp->tamBloque << " KB "
+         << "(Proceso ID=" << temp->idProceso << ")" << endl;
+
+    pila.tope = pila.tope->anterior;
+    pila.memoriaUsada -= temp->tamBloque;
+    pila.totalBloques--;
+
+    delete temp;
+    temp = NULL;
+
+    cout << "Bloque liberado. Memoria en uso: " << pila.memoriaUsada << " KB" << endl;
+}
+
+// REQ-F08: Mostrar estado de la pila
+void mostrarPila(const PilaMemoria& pila) {
+    if (pila.tope == NULL) {
+        cout << "La pila de memoria esta vacia." << endl;
+        return;
+    }
+
+    cout << "Estado de la Pila (tope -> base):" << endl;
+    cout << "------------------------------" << endl;
+    cout << "ID Proceso  | Tamano (KB)" << endl;
+    cout << "------------------------------" << endl;
+
+    NodoPila* aux = pila.tope;
+    while (aux != NULL) {
+        printf("%-11d | %d KB\n", aux->idProceso, aux->tamBloque);
+        aux = aux->anterior;
+    }
+
+    cout << "------------------------------" << endl;
+    cout << "Bloques activos : " << pila.totalBloques << endl;
+    cout << "Memoria en uso  : " << pila.memoriaUsada << " KB" << endl;
+}
