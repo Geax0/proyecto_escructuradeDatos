@@ -1,5 +1,5 @@
 /*
- * ============================================================
+
  *  SISTEMA DE GESTION DE PROCESOS
  *  Simulador de administracion de recursos en un Sistema Operativo
  *
@@ -9,13 +9,6 @@
  *    - Vilchez Aquino, Andy Jeison
  *    - Torres Patilla, Xiomara Yamile
  *    - Aguado Garay, Frank Joseph
- *
- *  Restricciones:
- *    - Lenguaje: C++ (DEV C++)
- *    - Prohibido usar STL
- *    - Toda gestion de datos: nodos y punteros nativos
- *    - Uso obligatorio de delete para liberar memoria
- * ============================================================
  */
 
 #include <iostream>
