@@ -400,3 +400,243 @@ void mostrarPila(const PilaMemoria& pila) {
     cout << "Bloques activos : " << pila.totalBloques << endl;
     cout << "Memoria en uso  : " << pila.memoriaUsada << " KB" << endl;
 }
+
+// ============================================================
+//  FUNCIONES AUXILIARES
+// ============================================================
+
+void limpiarPantalla() {
+    system("cls");
+}
+
+void pausar() {
+    cout << "\nPresione ENTER para continuar...";
+    cin.ignore();
+    cin.get();
+}
+
+// ============================================================
+//  SUBMENU - MODULO 1: GESTOR DE PROCESOS
+// ============================================================
+void menuGestorProcesos(ListaProcesos& lista, ColaPrioridad& cola, PilaMemoria& pila) {
+    int opcion;
+    do {
+        limpiarPantalla();
+        cout << "=== GESTOR DE PROCESOS (Lista Enlazada Simple) ===" << endl;
+        cout << "1. Registrar nuevo proceso" << endl;
+        cout << "2. Buscar proceso por ID" << endl;
+        cout << "3. Modificar prioridad / estado" << endl;
+        cout << "4. Eliminar proceso" << endl;
+        cout << "5. Ver todos los procesos" << endl;
+        cout << "0. Volver al menu principal" << endl;
+        opcion = leerEntero("Opcion: ");
+
+        if (opcion == 1) {
+            int  id, prioridad, tamBloque;
+            char nombre[TAM_STR];
+            cout << "\n-- REGISTRAR PROCESO --" << endl;
+            id        = leerEnteroPositivo("ID (entero unico): ");
+            leerCadena("Nombre: ", nombre, TAM_STR);
+            prioridad = leerEnteroPositivo("Prioridad (1=alta): ");
+            agregarProceso(lista, id, nombre, prioridad);
+
+            // REQ-F06: Asignar bloque de memoria al crearlo
+            tamBloque = leerEnteroPositivo("Tamano de bloque de memoria a asignar (KB): ");
+            asignarMemoria(pila, id, tamBloque);
+
+        } else if (opcion == 2) {
+            int id;
+            cout << "\n-- BUSCAR PROCESO --" << endl;
+            id = leerEnteroPositivo("ID a buscar: ");
+            NodoProceso* resultado = buscarProceso(lista, id);
+            if (resultado != NULL) {
+                cout << "Encontrado -> ID=" << resultado->dato.id
+                     << " | Nombre: "    << resultado->dato.nombre
+                     << " | Prioridad: " << resultado->dato.prioridad
+                     << " | Estado: "    << resultado->dato.estado << endl;
+            } else {
+                cout << "No se encontro el proceso con ID=" << id << endl;
+            }
+
+        } else if (opcion == 3) {
+            int  id, nuevaPrioridad;
+            char nuevoEstado[TAM_STR];
+            cout << "\n-- MODIFICAR PROCESO --" << endl;
+            id             = leerEnteroPositivo("ID a modificar: ");
+            nuevaPrioridad = leerEnteroPositivo("Nueva prioridad: ");
+            leerCadena("Nuevo estado (Listo/Espera/Ejecutando): ", nuevoEstado, TAM_STR);
+            modificarProceso(lista, id, nuevaPrioridad, nuevoEstado);
+
+        } else if (opcion == 4) {
+            int id;
+            cout << "\n-- ELIMINAR PROCESO --" << endl;
+            id = leerEnteroPositivo("ID a eliminar: ");
+            eliminarProceso(lista, id);
+
+        } else if (opcion == 5) {
+            cout << "\n-- LISTA DE PROCESOS --" << endl;
+            mostrarProcesos(lista);
+        }
+
+        if (opcion != 0) pausar();
+
+    } while (opcion != 0);
+}
+
+// ============================================================
+//  SUBMENU - MODULO 2: PLANIFICADOR DE CPU
+// ============================================================
+void menuPlanificadorCPU(ListaProcesos& lista, ColaPrioridad& cola) {
+    int opcion;
+    do {
+        limpiarPantalla();
+        cout << "=== PLANIFICADOR DE CPU (Cola de Prioridad) ===" << endl;
+        cout << "1. Encolar proceso para CPU" << endl;
+        cout << "2. Ejecutar (desencolar) proceso" << endl;
+        cout << "3. Ver cola de ejecucion" << endl;
+        cout << "0. Volver al menu principal" << endl;
+        opcion = leerEntero("Opcion: ");
+
+        if (opcion == 1) {
+            int id;
+            cout << "\n-- ENCOLAR PROCESO --" << endl;
+            id = leerEnteroPositivo("ID del proceso a encolar: ");
+            NodoProceso* resultado = buscarProceso(lista, id);
+            if (resultado != NULL) {
+                encolarProceso(cola, resultado->dato);
+            } else {
+                cout << "Proceso con ID=" << id << " no encontrado en el registro." << endl;
+            }
+
+        } else if (opcion == 2) {
+            cout << "\n-- EJECUTAR PROCESO (CPU) --" << endl;
+            desencolarProceso(cola);
+
+        } else if (opcion == 3) {
+            cout << "\n-- COLA DE EJECUCION --" << endl;
+            mostrarCola(cola);
+        }
+
+        if (opcion != 0) pausar();
+
+    } while (opcion != 0);
+}
+
+// ============================================================
+//  SUBMENU - MODULO 3: GESTOR DE MEMORIA
+// ============================================================
+void menuGestorMemoria(PilaMemoria& pila) {
+    int opcion;
+    do {
+        limpiarPantalla();
+        cout << "=== GESTOR DE MEMORIA (Pila Dinamica) ===" << endl;
+        cout << "1. Asignar bloque de memoria (push)" << endl;
+        cout << "2. Liberar bloque de memoria (pop)" << endl;
+        cout << "3. Ver estado de la memoria" << endl;
+        cout << "0. Volver al menu principal" << endl;
+        opcion = leerEntero("Opcion: ");
+
+        if (opcion == 1) {
+            int id, tamBloque;
+            cout << "\n-- ASIGNAR BLOQUE (PUSH) --" << endl;
+            id        = leerEnteroPositivo("ID del proceso: ");
+            tamBloque = leerEnteroPositivo("Tamano del bloque (KB): ");
+            asignarMemoria(pila, id, tamBloque);
+
+        } else if (opcion == 2) {
+            cout << "\n-- LIBERAR BLOQUE (POP) --" << endl;
+            liberarMemoria(pila);
+
+        } else if (opcion == 3) {
+            cout << "\n-- ESTADO DE LA MEMORIA --" << endl;
+            mostrarPila(pila);
+        }
+
+        if (opcion != 0) pausar();
+
+    } while (opcion != 0);
+}
+
+// ============================================================
+//  MENU PRINCIPAL - REQ-F09
+// ============================================================
+int main() {
+    ListaProcesos lista;
+    ColaPrioridad cola;
+    PilaMemoria   pila;
+
+    int opcion;
+    do {
+        limpiarPantalla();
+        cout << "========================================" << endl;
+        cout << "   SISTEMA DE GESTION DE PROCESOS" << endl;
+        cout << "   Simulador de SO | Estructura de Datos" << endl;
+        cout << "   Universidad Continental  |  2026" << endl;
+        cout << "========================================" << endl;
+        cout << "1. Gestor de Procesos  (Lista Enlazada)" << endl;
+        cout << "2. Planificador de CPU (Cola Prioridad)" << endl;
+        cout << "3. Gestor de Memoria   (Pila Dinamica)" << endl;
+        cout << "4. Ver resumen del sistema" << endl;
+        cout << "0. Salir" << endl;
+        cout << "========================================" << endl;
+        opcion = leerEntero("Opcion: ");
+
+        switch (opcion) {
+            case 1:
+                menuGestorProcesos(lista, cola, pila);
+                break;
+            case 2:
+                menuPlanificadorCPU(lista, cola);
+                break;
+            case 3:
+                menuGestorMemoria(pila);
+                break;
+            case 4:
+                limpiarPantalla();
+                cout << "\n=== RESUMEN DEL SISTEMA ===" << endl;
+                cout << "\n> PROCESOS REGISTRADOS:" << endl;
+                mostrarProcesos(lista);
+                cout << "\n> COLA DE EJECUCION (CPU):" << endl;
+                mostrarCola(cola);
+                cout << "\n> MEMORIA RAM SIMULADA:" << endl;
+                mostrarPila(pila);
+                pausar();
+                break;
+            case 0:
+                cout << "Cerrando el simulador..." << endl;
+                break;
+            default:
+                cout << "Opcion invalida." << endl;
+                pausar();
+        }
+
+    } while (opcion != 0);
+
+    // Liberar toda la memoria dinamica al cerrar (REQ-NF03)
+
+    // Liberar lista enlazada
+    NodoProceso* pAux = lista.inicio;
+    while (pAux != NULL) {
+        NodoProceso* temp = pAux;
+        pAux = pAux->siguiente;
+        delete temp;
+    }
+
+    // Liberar cola de prioridad
+    NodoCola* cAux = cola.frente;
+    while (cAux != NULL) {
+        NodoCola* temp = cAux;
+        cAux = cAux->siguiente;
+        delete temp;
+    }
+
+    // Liberar pila de memoria
+    NodoPila* mAux = pila.tope;
+    while (mAux != NULL) {
+        NodoPila* temp = mAux;
+        mAux = mAux->anterior;
+        delete temp;
+    }
+
+    return 0;
+}
