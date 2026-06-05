@@ -13,10 +13,12 @@
 
 #include <iostream>
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
 using namespace std;
 
 const int TAM_STR = 50;
-
+const int MAX_RAM = 4096; // LÍMITE MÁXIMO DE RAM SIMULADA EN KB
 // ============================================================
 //  FUNCIONES DE LECTURA SEGURA
 //  Evitan que el programa se rompa con entradas invalidas
@@ -104,13 +106,13 @@ struct ListaProcesos {
 };
 
 // REQ-F01: Agregar proceso al final de la lista
-void agregarProceso(ListaProcesos& lista, int id, const char* nombre, int prioridad) {
-    // Verificar que el ID no exista
+bool agregarProceso(ListaProcesos& lista, int id, const char* nombre, int prioridad) {
+    // Verificar que el ID no exista - si el ID ya existe y frenar el flujo externo
     NodoProceso* aux = lista.inicio;
     while (aux != NULL) {
         if (aux->dato.id == id) {
-            cout << "ERROR: Ya existe un proceso con ID " << id << endl;
-            return;
+            cout << "ERROR: Ya existe un proceso con ID " << id <<". Operacion cancelada"<< endl;
+            return false;
         }
         aux = aux->siguiente;
     }
@@ -136,6 +138,7 @@ void agregarProceso(ListaProcesos& lista, int id, const char* nombre, int priori
 
     lista.total++;
     cout << "Proceso '" << nombre << "' (ID=" << id << ") registrado correctamente." << endl;
+    return true;
 }
 
 // REQ-F02: Buscar proceso por ID
@@ -191,9 +194,9 @@ void eliminarProceso(ListaProcesos& lista, int id) {
     }
 
     cout << "Proceso '" << actual->dato.nombre << "' (ID=" << id << ") eliminado." << endl;
+    cout << "Nota: Recuerde liberar sus recursos de la RAM (Modulo 3) y CPU (Modulo 2) si es necesario." << endl;
 
     delete actual;
-    actual = NULL;
     lista.total--;
 }
 
@@ -210,7 +213,7 @@ void mostrarProcesos(const ListaProcesos& lista) {
 
     NodoProceso* aux = lista.inicio;
     while (aux != NULL) {
-        printf("%-5d | %-18s | %-9d | %s\n",
+        printf("%-6d | %-18s | %-9d | %s\n",
                aux->dato.id,
                aux->dato.nombre,
                aux->dato.prioridad,
@@ -288,7 +291,6 @@ void desencolarProceso(ColaPrioridad& cola) {
     }
 
     delete temp;
-    temp = NULL;
     cola.total--;
     cout << "Proceso finalizado y removido de la cola." << endl;
 }
@@ -307,7 +309,7 @@ void mostrarCola(const ColaPrioridad& cola) {
 
     NodoCola* aux = cola.frente;
     while (aux != NULL) {
-        printf("%-5d | %-18s | %d\n",
+        printf("%-6d | %-18s | %d\n",
                aux->dato.id,
                aux->dato.nombre,
                aux->dato.prioridad);
@@ -336,7 +338,13 @@ struct PilaMemoria {
 };
 
 // REQ-F06: Asignar bloque de memoria (push)
-void asignarMemoria(PilaMemoria& pila, int idProceso, int tamBloque) {
+bool asignarMemoria(PilaMemoria& pila, int idProceso, int tamBloque) {
+    if (pila.memoriaUsada + tamBloque > MAX_RAM) {
+        cout << "ERROR: Memoria RAM insuficiente de la Pila. Capacidad disponible: " 
+             << (MAX_RAM - pila.memoriaUsada) << " KB. No se puede asignar " << tamBloque << " KB." << endl;
+        return false;
+    }
+
     NodoPila* nuevo  = new NodoPila();
     nuevo->idProceso = idProceso;
     nuevo->tamBloque = tamBloque;
@@ -347,7 +355,8 @@ void asignarMemoria(PilaMemoria& pila, int idProceso, int tamBloque) {
     pila.memoriaUsada += tamBloque;
 
     cout << "[PUSH] Bloque de " << tamBloque << " KB asignado al proceso ID=" << idProceso
-         << ". Memoria en uso: " << pila.memoriaUsada << " KB" << endl;
+         << ". Memoria total en uso: " << pila.memoriaUsada << " / " << MAX_RAM << " KB" << endl;
+    return true;
 }
 
 // REQ-F07: Liberar bloque de memoria (pop)
@@ -366,7 +375,6 @@ void liberarMemoria(PilaMemoria& pila) {
     pila.totalBloques--;
 
     delete temp;
-    temp = NULL;
 
     cout << "Bloque liberado. Memoria en uso: " << pila.memoriaUsada << " KB" << endl;
 }
@@ -428,14 +436,25 @@ void menuGestorProcesos(ListaProcesos& lista, ColaPrioridad& cola, PilaMemoria& 
             int  id, prioridad, tamBloque;
             char nombre[TAM_STR];
             cout << "\n-- REGISTRAR PROCESO --" << endl;
-            id        = leerEnteroPositivo("ID (entero unico): ");
-            leerCadena("Nombre: ", nombre, TAM_STR);
-            prioridad = leerEnteroPositivo("Prioridad (1=alta): ");
-            agregarProceso(lista, id, nombre, prioridad);
-
-            // REQ-F06: Asignar bloque de memoria al crearlo
-            tamBloque = leerEnteroPositivo("Tamano de bloque de memoria a asignar (KB): ");
-            asignarMemoria(pila, id, tamBloque);
+            id = leerEnteroPositivo("ID (entero unico): ");
+            
+            // Comprobar el ID de forma inmediata antes de avanzar
+            NodoProceso* buscado = buscarProceso(lista, id);
+            if (buscado != NULL) {
+                cout << "ERROR: Ya existe un proceso con el ID " << id << " . Registro denegado." << endl;
+            } else {
+                leerCadena("Nombre: ", nombre, TAM_STR);
+                prioridad = leerEnteroPositivo("Prioridad (1=alta): ");
+                tamBloque = leerEnteroPositivo("Tamano de bloque de memoria a asignar (KB): ");
+                
+                // Intentar asignar memoria primero
+                if (asignarMemoria(pila, id, tamBloque)) {
+                    // Si la memoria es suficiente, se consolida en la lista
+                    agregarProceso(lista, id, nombre, prioridad);
+                } else {
+                    cout << "Registro cancelado por falta de recursos de memoria RAM." << endl;
+                }
+            }
 
         } else if (opcion == 2) {
             int id;
