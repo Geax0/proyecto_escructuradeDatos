@@ -190,7 +190,7 @@ Proceso ID=101 actualizado. Prioridad=1 | Estado=Ejecutando
 
 Elimina un proceso de la lista enlazada por su ID.
 
-> ⚠️ **Importante:** Eliminar un proceso de la lista **no libera automáticamente** su bloque de memoria en la pila ni lo retira de la cola de CPU. Se recomienda hacerlo manualmente desde los módulos correspondientes.
+>  **Importante:** Eliminar un proceso de la lista **no libera automáticamente** su bloque de memoria en la pila ni lo retira de la cola de CPU. Se recomienda hacerlo manualmente desde los módulos correspondientes.
 
 **Ejemplo de uso:**
 ```
@@ -311,7 +311,7 @@ Tamano del bloque (KB): 256
 [PUSH] Bloque de 256 KB asignado al proceso ID=103. Memoria total en uso: 768 / 4096 KB
 ```
 
-> ⚠️ Si la memoria disponible es insuficiente, la operación se cancela con un mensaje de error.
+>  Si la memoria disponible es insuficiente, la operación se cancela con un mensaje de error.
 
 ---
 
